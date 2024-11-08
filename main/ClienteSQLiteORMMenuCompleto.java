@@ -154,12 +154,19 @@ public class ClienteSQLiteORMMenuCompleto {
 		// TODO: Buscar las sanciones cuya marca de vehículo = marca. Mostrar nombre, apellido1, apellido2 del propietario así como la matrícula del vehículo, la fecha y el importe de la sanciíon
 		try{
 			Dao<Sancion, String> sancionDao = DaoManager.createDao(connectionSource, Sancion.class);
-			String sql = "SELECT fecha, estado, expediente, infractor, matricula, kilometro, direccion, articulo, importe, num_agente, via FROM sanciones JOIN vehiculos USING (matricula) join modelos using (cod_modelo) join marcas using (cod_marca) join personas on infractor = nif where nom_marca = ? order by expediente asc";
+			String sql = "SELECT sanciones.expediente, personas.nombre, personas.Apellido1, personas.Apellido2, personas.nif, nom_marca, nom_modelo, vehiculos.matricula, sanciones.fecha, sanciones.articulo, sanciones.importe "+
+						 "FROM sanciones " +
+						 "JOIN vehiculos USING (matricula) " +
+						 "JOIN modelos USING (cod_modelo) " +
+						 "JOIN marcas USING (cod_marca) " +
+						 "JOIN personas ON infractor = nif " + 
+						 "WHERE nom_marca = ? " +
+						 "ORDER BY expediente ASC";
 			String[] params = {marca};
-			List<Sancion> results = sancionDao.queryRaw(sql, sancionDao.getRawRowMapper(), params).getResults();
+			List<String[]> results = sancionDao.queryRaw(sql, params).getResults();
 			for (int i = 0; i < results.size(); i++){
-				Sancion s = results.get(i);
-				System.out.println((i+1) + ". Exp. " + s.getExpediente() + ": " + s.getInfractor().getNombre() + " " + s.getInfractor().getApellido1() + " " + s.getInfractor().getApellido2() + " - " + s.getInfractor().getNif() + " - " + s.getVehiculo().getModelo().getMarca().getNombre() + " " + s.getVehiculo().getModelo().getNombre() + " (" + s.getVehiculo().getMatricula() + "): "+ s.getFecha() + " - " + s.getArticulo() + " - " + s.getImporte() + "€");
+				String[] row = results.get(i);
+				System.out.println((i+1) + ". Exp. " + row[0] + ": " + row[1] + " " + row[2] + " " + row[3] + " - " + row[4] + " - " + row[5] + " " + row[6] + " (" + row[7] + "): "+ row[8] + " - " + row[9] + " - " + row[10] + "€");
 
 			}
 		} catch (SQLException e) {
