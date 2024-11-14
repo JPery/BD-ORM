@@ -91,30 +91,144 @@ public class ClienteSQLiteORMMenu {
 	}
 
 	public void getArticulos(){
-		// TODO: Mostrar los distintos artículos de las sanciones ordenados de forma ascendente
+		// Mostrar los distintos artículos de las sanciones ordenados de forma ascendente
+		try {
+			Dao<Sancion, String> sancionDao = DaoManager.createDao(connectionSource, Sancion.class);
+			List<Sancion> results = sancionDao.queryBuilder().distinct().selectColumns("articulo").orderBy("articulo", true).query();
+			for (int i = 0; i < results.size(); i++){
+				Sancion s = results.get(i);
+				System.out.println((i+1) + ". " + s.getArticulo());
+			}
+		} catch (SQLException e) {
+			// Se ejecuta si hay algún error en la consulta
+			e.printStackTrace();
+		}
 	}
 
 	public void getSancionesByNif(String nif) {
-		// TODO: Buscar las sanciones donde infractor = nif. Mostrar fecha, artículo e importe
+		// Buscar las sanciones donde infractor = nif. Mostrar fecha, artículo e importe
+		try {
+			Dao<Sancion, String> sancionDao = DaoManager.createDao(connectionSource, Sancion.class);
+			List<Sancion> results = sancionDao.queryBuilder().orderBy("fecha", true).where().eq("infractor", nif).query();
+			if (results.size() > 0) {
+				System.out.println("Sanciones para el nif \"" + nif +"\":");
+				for (int i = 0; i < results.size(); i++){
+					Sancion s = results.get(i);
+					System.out.println((i+1) + ". " + s.getFecha() + ": " + s.getArticulo() + " - " + s.getImporte() + "€");
+				}
+			}
+			else {
+				System.out.println("No se encontraron sanciones para el nif: \"" + nif +"\"");
+			}
+		} catch (SQLException e) {
+			// Se ejecuta si hay algún error en la consulta
+			e.printStackTrace();
+		}
 	}	
 	
 	public void getVehiculosByArticuloSancion(String articulo){
-		// TODO: Obtener las sanciones cuyo artículo = articulo. Mostrar el expediente de la sanción, la marca, el modelo y la matrícula del vehículo
+		// Obtener las sanciones cuyo artículo = articulo. Mostrar el expediente de la sanción, la marca, el modelo y la matrícula del vehículo
+		try {
+			Dao<Sancion, String> sancionDao = DaoManager.createDao(connectionSource, Sancion.class);
+			List<Sancion> results = sancionDao.queryForEq("articulo", articulo);
+			if (results.size() > 0) {
+				System.out.println("Sanciones con artículo \"" + articulo +"\":");
+				for (int i = 0; i < results.size(); i++){
+					Sancion s = results.get(i);
+					//System.out.println((i+1) + ". " + s.getFecha() + ": " + s.getArticulo() + " - " + s.getImporte() + "€");
+					System.out.println(i + ". Exp. " + s.getExpediente() + ": " + s.getVehiculo().getModelo().getMarca().getNombre() + " " + s.getVehiculo().getModelo().getNombre() + ": " + s.getVehiculo().getMatricula());
+
+				}
+			}
+			else{
+				System.out.println("No se encontraron sanciones con articulo: \"" + articulo +"\"");
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
 	}
 
 	public void getSancionesByMarca(String marca){
-		// TODO: Buscar las sanciones cuya marca de vehículo = marca. Mostrar nombre, apellido1, apellido2 del propietario así como la matrícula del vehículo, la fecha y el importe de la sanciíon
+		// Buscar las sanciones cuya marca de vehículo = marca. Mostrar nombre, apellido1, apellido2 del propietario así como la matrícula del vehículo, la fecha y el importe de la sanciíon
+		try{
+			Dao<Sancion, String> sancionDao = DaoManager.createDao(connectionSource, Sancion.class);
+			String sql = "SELECT sanciones.expediente, personas.nombre, personas.Apellido1, personas.Apellido2, personas.nif, nom_marca, nom_modelo, vehiculos.matricula, sanciones.fecha, sanciones.articulo, sanciones.importe "+
+						 "FROM sanciones " +
+						 "JOIN vehiculos USING (matricula) " +
+						 "JOIN modelos USING (cod_modelo) " +
+						 "JOIN marcas USING (cod_marca) " +
+						 "JOIN personas ON infractor = nif " + 
+						 "WHERE nom_marca = ? " +
+						 "ORDER BY expediente ASC";
+			String[] params = {marca};
+			List<String[]> results = sancionDao.queryRaw(sql, params).getResults();
+			for (int i = 0; i < results.size(); i++){
+				String[] row = results.get(i);
+				System.out.println((i+1) + ". Exp. " + row[0] + ": " + row[1] + " " + row[2] + " " + row[3] + " - " + row[4] + " - " + row[5] + " " + row[6] + " (" + row[7] + "): "+ row[8] + " - " + row[9] + " - " + row[10] + "€");
+
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 
 	public void deleteSancion(String expediente){
-		// TODO: Ejecutar consulta y mostrar el número de filas afectadas (debería ser 1 si la sanción fue eliminada o 0 si el expediente no existe)
+		// Ejecutar consulta y mostrar el número de filas afectadas (debería ser 1 si la sanción fue eliminada o 0 si el expediente no existe)
+		try {
+			Dao<Sancion, String> sancionDao = DaoManager.createDao(connectionSource, Sancion.class);
+			int deletedRows = sancionDao.deleteById(expediente);
+			if(deletedRows == 0){
+				System.err.println("No se ha encontrado sanción con expediente " + expediente);
+			}
+			else{
+				System.err.println("Se han eliminado " + deletedRows + " sanciones");
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	public void insertModelo(String marca, String modelo, int potencia){
-		// TODO: Obtener el id de la marca si existe o crearla si no existe. Pista: el nuevo cod_marca debería ser max(cod_marca) + 1 of marcas
+		// Obtener el id de la marca si existe o crearla si no existe. Pista: el nuevo cod_marca debería ser max(cod_marca) + 1 of marcas
+
+		try {
+			Dao<Modelo, String> modeloDao = DaoManager.createDao(connectionSource, Modelo.class);
+			Dao<Marca, String> marcaDao = DaoManager.createDao(connectionSource, Marca.class);
+			Marca m = marcaDao.queryForFirst(marcaDao.queryBuilder().where().eq("nom_marca", marca).prepare());
+			if (m == null){
+				// Crear la marca que no existe
+				String codigoMarca = marcaDao.queryRaw("SELECT max(cod_marca) + 1 from marcas").getFirstResult()[0];
+				m = new Marca(Integer.parseInt(codigoMarca), marca);
+				int insertedRows = marcaDao.create(m);
+				if (insertedRows == 0){
+					throw new SQLException("Fallo al crear la marca, no hay filas afectadas");
+				}
+			}
+			else{
+				// Comprobar que el modelo de la marca existente no existe
+				Modelo model = modeloDao.queryForFirst(modeloDao.queryBuilder().where().eq("nom_modelo", modelo).and().eq("cod_marca", m.getCodigo()).prepare());
+				if (model == null)
+					System.out.println("El modelo \"" + modelo + "\" de la marca \"" + marca + "\" ya existe");
+					return;
+			}
+			// Insertar nuevo modelo con cod_marca, nom_modelo y potencia. Pista: el nuevo cod_modelo debería ser max(cod_modelo) + 1 of modelos
+			// Crear el modelo que no existe
+			String codigoModelo = marcaDao.queryRaw("SELECT max(cod_modelo) + 1 from modelos").getFirstResult()[0];
+			int insertedRows = modeloDao.create(new Modelo(Integer.parseInt(codigoModelo), modelo, m, potencia));
+			if (insertedRows == 0){
+				throw new SQLException("Fallo al crear el modelo, no hay filas afectadas");
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		
-		// TODO: Insertar nuevo modelo con cod_marca, nom_modelo y potencia. Pista: el nuevo cod_modelo debería ser max(cod_modelo) + 1 of modelos
+
 
 	}
 
