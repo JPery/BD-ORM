@@ -7,25 +7,19 @@ import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.field.ForeignCollectionField;
 import com.j256.ormlite.table.DatabaseTable;
 
-@DatabaseTable(tableName="vehiculos")
 public class Vehiculo {
-    @DatabaseField(id=true)
+
     private String matricula;
     
-    @DatabaseField(canBeNull=false, columnName="fec_matriculacion")
     private String fechaMatriculacion;
     
-    @DatabaseField(canBeNull=false, foreign=true, columnName="propietario", foreignColumnName="nif")
     private Persona propietario;
 
-    @DatabaseField(canBeNull=false)
     private String bastidor;
 
-    @DatabaseField(canBeNull=false, foreign=true, columnName="cod_modelo", foreignColumnName="cod_modelo")
     private Modelo modelo;
 
-	@ForeignCollectionField()
-	ForeignCollection<Sancion> sanciones;
+    ForeignCollection<Sancion> sanciones;
     
         
     public Collection<Sancion> geSanciones() {
